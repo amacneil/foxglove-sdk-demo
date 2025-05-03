@@ -1,52 +1,31 @@
 [project]
-name = "sdk-game"
+name = "foxglove-sdk-demo"
 version = "0.1.0"
-description = "Add your description here"
+description = "Experimenting with the Foxglove SDK"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["foxglove-sdk>=0.7.1", "watchfiles>=1.0.5", "numpy>=1.26.0"]
+dependencies = ["foxglove-sdk>=0.7.1", "numpy>=1.26.0"]
 
 [dependency-groups]
 dev = [
     "mypy>=1.15.0",
     "ruff>=0.11.8",
+    "watchfiles>=1.0.5",
 ]
 
-[tool.ruff]
-# Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
-select = ["E", "F", "I"]  # I is for isort (import sorting)
+[tool.ruff.lint]
+# Enable pycodestyle (E), Pyflakes (F), and isort (I) rules for linting.
+# E: Style errors and warnings from pycodestyle
+# F: Logical/syntax errors detected by Pyflakes
+# I: Import sorting and formatting rules from isort
+select = ["E", "F", "I"]
 ignore = []
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
 unfixable = []
 
-# Exclude a variety of commonly ignored directories.
-exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".git-rewrite",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
-]
-
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["sdk-game"]
 
 [tool.mypy]
