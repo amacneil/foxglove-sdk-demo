@@ -4,17 +4,16 @@ from math import cos, pi, sin
 
 import foxglove as fg
 import numpy as np
-from scipy.spatial.transform import Rotation
 from foxglove.schemas import (
     Color,
     CubePrimitive,
     Duration,
     FrameTransform,
     Grid,
+    LinePrimitive,
     PackedElementField,
     PackedElementFieldNumericType,
     Pose,
-    PoseInFrame,
     Quaternion,
     SceneEntity,
     SceneUpdate,
@@ -23,6 +22,7 @@ from foxglove.schemas import (
     Vector3,
 )
 from foxglove.websocket import Capability, Client, ServerListener
+from scipy.spatial.transform import Rotation
 from watchfiles import run_process
 
 
@@ -87,8 +87,8 @@ class TeleopListener(ServerListener):
             # Handle angular velocity for rotation
             angular = msg.get("angular", {})
             if angular.get("z", 0) != 0:
-                # Create a rotation quaternion for 15 degrees around Z axis
-                angle = pi / 12  # 15 degrees in radians
+                # Create a rotation quaternion for 7.5 degrees around Z axis
+                angle = pi / 24  # 7.5 degrees in radians
                 if angular["z"] < 0:  # If negative, rotate the other way
                     angle = -angle
 
@@ -217,6 +217,151 @@ def create_landscape() -> SceneEntity:
     return landscape
 
 
+def create_robot() -> SceneEntity:
+    """Create a cute gray robot using cubes."""
+    cubes = []
+    lines: list[LinePrimitive] = []
+
+    # Robot body (gray)
+    gray_color = Color(r=0.7, g=0.7, b=0.7, a=1.0)
+    dark_gray_color = Color(r=0.5, g=0.5, b=0.5, a=1.0)
+    black_color = Color(r=0.1, g=0.1, b=0.1, a=1.0)
+
+    # Robot body
+    cubes.append(
+        CubePrimitive(
+            pose=Pose(
+                position=Vector3(x=0, y=0, z=0.4),  # Main body
+                orientation=Quaternion(x=0, y=0, z=0, w=1),
+            ),
+            size=Vector3(x=0.5, y=0.4, z=0.4),
+            color=gray_color,
+        )
+    )
+
+    # Robot head
+    cubes.append(
+        CubePrimitive(
+            pose=Pose(
+                position=Vector3(x=0, y=0, z=0.8),  # Head above body
+                orientation=Quaternion(x=0, y=0, z=0, w=1),
+            ),
+            size=Vector3(x=0.35, y=0.35, z=0.3),
+            color=gray_color,
+        )
+    )
+
+    # Robot arms
+    # Left upper arm
+    cubes.append(
+        CubePrimitive(
+            pose=Pose(
+                position=Vector3(x=0, y=0.25, z=0.45),
+                orientation=Quaternion(x=0, y=0, z=0.38, w=0.92),  # ~45 degrees
+            ),
+            size=Vector3(x=0.1, y=0.25, z=0.1),
+            color=gray_color,
+        )
+    )
+
+    # Left forearm
+    cubes.append(
+        CubePrimitive(
+            pose=Pose(
+                position=Vector3(x=0.04, y=0.40, z=0.45),
+                orientation=Quaternion(x=0, y=0, z=0, w=1),
+            ),
+            size=Vector3(x=0.1, y=0.2, z=0.1),
+            color=gray_color,
+        )
+    )
+
+    # Left hand
+    cubes.append(
+        CubePrimitive(
+            pose=Pose(
+                position=Vector3(x=0.04, y=0.52, z=0.45),
+                orientation=Quaternion(x=0, y=0, z=0, w=1),
+            ),
+            size=Vector3(x=0.12, y=0.08, z=0.12),
+            color=dark_gray_color,
+        )
+    )
+
+    # Right upper arm
+    cubes.append(
+        CubePrimitive(
+            pose=Pose(
+                position=Vector3(x=0, y=-0.25, z=0.45),
+                orientation=Quaternion(x=0, y=0, z=-0.38, w=0.92),  # ~-45 degrees
+            ),
+            size=Vector3(x=0.1, y=0.25, z=0.1),
+            color=gray_color,
+        )
+    )
+
+    # Right forearm
+    cubes.append(
+        CubePrimitive(
+            pose=Pose(
+                position=Vector3(x=0.04, y=-0.40, z=0.45),
+                orientation=Quaternion(x=0, y=0, z=0, w=1),
+            ),
+            size=Vector3(x=0.1, y=0.2, z=0.1),
+            color=gray_color,
+        )
+    )
+
+    # Right hand
+    cubes.append(
+        CubePrimitive(
+            pose=Pose(
+                position=Vector3(x=0.04, y=-0.52, z=0.45),
+                orientation=Quaternion(x=0, y=0, z=0, w=1),
+            ),
+            size=Vector3(x=0.12, y=0.08, z=0.12),
+            color=dark_gray_color,
+        )
+    )
+
+    # Robot wheels/tracks
+    cubes.append(
+        CubePrimitive(
+            pose=Pose(
+                position=Vector3(x=0, y=-0.25, z=0.15),  # Right wheel
+                orientation=Quaternion(x=0, y=0, z=0, w=1),
+            ),
+            size=Vector3(x=0.45, y=0.1, z=0.3),
+            color=dark_gray_color,
+        )
+    )
+
+    cubes.append(
+        CubePrimitive(
+            pose=Pose(
+                position=Vector3(x=0, y=0.25, z=0.15),  # Left wheel
+                orientation=Quaternion(x=0, y=0, z=0, w=1),
+            ),
+            size=Vector3(x=0.45, y=0.1, z=0.3),
+            color=dark_gray_color,
+        )
+    )
+
+    # Create a scene entity for the robot
+    robot = SceneEntity(
+        timestamp=Timestamp(sec=0),
+        frame_id="ego",
+        id="robot",
+        lifetime=Duration(sec=0, nsec=0),  # Never expire
+        frame_locked=True,  # This will follow the ego frame
+        metadata=[],
+        cubes=cubes,
+        lines=lines,
+    )
+
+    return robot
+
+
 def game_loop(listener: TeleopListener) -> None:
     # Game loop settings
     TARGET_FPS = 30  # Changed to 30Hz for transforms
@@ -227,6 +372,7 @@ def game_loop(listener: TeleopListener) -> None:
     # Create initial landscape and ground
     landscape = create_landscape()
     ground = create_ground()
+    robot = create_robot()
 
     last_time = time.perf_counter()
     last_map_scene_time = last_time
@@ -258,17 +404,10 @@ def game_loop(listener: TeleopListener) -> None:
                 ),
             )
 
-            # Publish ego pose in ego frame at 30Hz
+            # Publish robot entity instead of pose
             fg.log(
-                "/pose",
-                PoseInFrame(
-                    timestamp=Timestamp(sec=0),
-                    frame_id="ego",
-                    pose=Pose(
-                        position=Vector3(x=0, y=0, z=0.1),  # 0.1 units above ground
-                        orientation=Quaternion(x=0, y=0, z=0, w=1),
-                    ),
-                ),
+                "/ego",
+                SceneUpdate(entities=[robot]),
             )
 
             # Update map and scene at 1Hz
