@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "Experimenting with the Foxglove SDK"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["foxglove-sdk>=0.7.1", "numpy>=1.26.0"]
+dependencies = [
+    "foxglove-sdk>=0.7.1",
+ "numpy>=1.26.0",
+ "scipy>=1.15.2",
+]
 
 [dependency-groups]
 dev = [

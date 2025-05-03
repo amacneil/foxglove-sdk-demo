@@ -4,6 +4,7 @@ from math import cos, pi, sin
 
 import foxglove as fg
 import numpy as np
+from scipy.spatial.transform import Rotation
 from foxglove.schemas import (
     Color,
     CubePrimitive,
@@ -31,6 +32,32 @@ class TeleopListener(ServerListener):
         self.ego_orientation = {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}
         self.last_update = time.time()
 
+    def apply_rotation_to_vector(self, q: dict, v: dict) -> dict:
+        """Apply quaternion rotation to a vector using scipy.
+
+        Args:
+            q: Quaternion dictionary with x, y, z, w keys
+            v: Vector dictionary with x, y, z keys
+
+        Returns:
+            Rotated vector dictionary with x, y, z keys
+        """
+        # Create a Rotation object directly - scipy uses [x, y, z, w]
+        r = Rotation.from_quat([q["x"], q["y"], q["z"], q["w"]])
+
+        # Create vector
+        vec = np.array([v["x"], v["y"], v["z"]])
+
+        # Apply rotation
+        rotated_vec = r.apply(vec)
+
+        # Return as dictionary
+        return {
+            "x": float(rotated_vec[0]),
+            "y": float(rotated_vec[1]),
+            "z": float(rotated_vec[2]),
+        }
+
     def on_message_data(
         self, client: Client, client_channel_id: int, data: bytes
     ) -> None:
@@ -39,16 +66,23 @@ class TeleopListener(ServerListener):
             msg = json.loads(data)
             print(f"Teleop: {msg}")
 
-            # Update position based on linear velocity
+            # Extract linear velocities
             linear = msg.get("linear", {})
-            dx = linear.get("x", 0) * 0.1  # Scale down to 0.1 units
-            dy = linear.get("y", 0) * 0.1  # Scale down to 0.1 units
-            dz = linear.get("z", 0) * 0.1  # Scale down to 0.1 units
+            linear_vec = {
+                "x": linear.get("x", 0) * 0.1,  # Scale down to 0.1 units
+                "y": linear.get("y", 0) * 0.1,  # Scale down to 0.1 units
+                "z": linear.get("z", 0) * 0.1,  # Scale down to 0.1 units
+            }
 
-            # Update position in world frame
-            self.ego_position["x"] += dx
-            self.ego_position["y"] += dy
-            self.ego_position["z"] += dz
+            # Apply rotation to linear velocity vector based on current orientation
+            rotated_vec = self.apply_rotation_to_vector(
+                self.ego_orientation, linear_vec
+            )
+
+            # Update position in world frame with rotated velocity
+            self.ego_position["x"] += rotated_vec["x"]
+            self.ego_position["y"] += rotated_vec["y"]
+            self.ego_position["z"] += rotated_vec["z"]
 
             # Handle angular velocity for rotation
             angular = msg.get("angular", {})
@@ -58,23 +92,30 @@ class TeleopListener(ServerListener):
                 if angular["z"] < 0:  # If negative, rotate the other way
                     angle = -angle
 
-                # Create rotation quaternion
-                rot_z = sin(angle / 2)
-                rot_w = cos(angle / 2)
+                # Create current rotation directly
+                current_rot = Rotation.from_quat(
+                    [
+                        self.ego_orientation["x"],
+                        self.ego_orientation["y"],
+                        self.ego_orientation["z"],
+                        self.ego_orientation["w"],
+                    ]
+                )
 
-                # Multiply quaternions (combine rotations)
-                new_w = (
-                    rot_w * self.ego_orientation["w"]
-                    - rot_z * self.ego_orientation["z"]
-                )
-                new_z = (
-                    rot_w * self.ego_orientation["z"]
-                    + rot_z * self.ego_orientation["w"]
-                )
+                # Create rotation for the new angle around Z
+                delta_rot = Rotation.from_rotvec([0, 0, angle])
+
+                # Compose rotations
+                new_rot = delta_rot * current_rot
+
+                # Get new quaternion [x, y, z, w]
+                new_quat = new_rot.as_quat()
 
                 # Update orientation dictionary
-                self.ego_orientation["z"] = new_z
-                self.ego_orientation["w"] = new_w
+                self.ego_orientation["x"] = float(new_quat[0])
+                self.ego_orientation["y"] = float(new_quat[1])
+                self.ego_orientation["z"] = float(new_quat[2])
+                self.ego_orientation["w"] = float(new_quat[3])
 
         except json.JSONDecodeError:
             print(f"Failed to decode message: {data!r}")
