@@ -1,35 +1,34 @@
+import json
+import time
+from math import cos, pi, sin
+
 import foxglove as fg
+import numpy as np
 from foxglove.schemas import (
+    Color,
+    CubePrimitive,
+    Duration,
+    FrameTransform,
+    Grid,
+    PackedElementField,
+    PackedElementFieldNumericType,
     Pose,
     PoseInFrame,
     Quaternion,
-    Timestamp,
-    Vector3,
-    FrameTransform,
-    SceneUpdate,
     SceneEntity,
-    CompressedImage,
-    CubePrimitive,
-    Color,
-    Duration,
-    Grid,
+    SceneUpdate,
+    Timestamp,
     Vector2,
-    PackedElementField,
-    PackedElementFieldNumericType,
+    Vector3,
 )
-from foxglove.websocket import ServerListener, Client, ChannelView, Capability
-import time
+from foxglove.websocket import Capability, Client, ServerListener
 from watchfiles import run_process
-import numpy as np
-import logging
-import json
-from math import sin, cos, pi
 
 
 class TeleopListener(ServerListener):
-    def __init__(self):
-        self.ego_position = {"x": 0, "y": 0, "z": 0}
-        self.ego_orientation = {"x": 0, "y": 0, "z": 0, "w": 1}
+    def __init__(self) -> None:
+        self.ego_position = {"x": 0.0, "y": 0.0, "z": 0.0}
+        self.ego_orientation = {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}
         self.last_update = time.time()
 
     def on_message_data(
@@ -86,7 +85,7 @@ class TeleopListener(ServerListener):
             traceback.print_exc()
 
 
-def create_ground():
+def create_ground() -> Grid:
     # Create a grid for the ground
     width = 11  # -5 to +5
     height = 11  # -5 to +5
@@ -131,7 +130,7 @@ def create_ground():
     return ground
 
 
-def create_landscape():
+def create_landscape() -> SceneEntity:
     # Create cubes for the landscape
     cubes = []
 
@@ -177,7 +176,7 @@ def create_landscape():
     return landscape
 
 
-def game_loop(listener):
+def game_loop(listener: TeleopListener) -> None:
     # Game loop settings
     TARGET_FPS = 30  # Changed to 30Hz for transforms
     MAP_SCENE_FPS = 1  # Keep map and scene at 1Hz
@@ -246,7 +245,7 @@ def game_loop(listener):
             time.sleep(0.001)  # 1ms sleep
 
 
-def main():
+def main() -> None:
     try:
         # Create our listener
         listener = TeleopListener()

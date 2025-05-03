@@ -2,6 +2,14 @@
 
 We're building an interactive 3d world using the foxgove sdk.
 
+## Tools
+
+We use uv and mypy.
+
+Run the app using `uv run main.py`
+
+## About Foxglove
+
 Foxglove is a multimodal viz tool. Here is an example of using the foxglove SDK. Topics like "/example" can be called anything we like.
 
 ```
@@ -23,7 +31,7 @@ fg.log("/example", PoseInFrame(
 ))
 ```
 
-## Schema documentation
+## Foxglove schema documentation
 
 NOTE!: These schemas only have constructors, you cannot get or set properties on them.
 
